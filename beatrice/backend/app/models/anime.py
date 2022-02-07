@@ -7,7 +7,7 @@ import sqlmodel
 from app.models import mixins
 
 
-class AnimeBase(sqlmodel.SQLModel, mixins.TimestampMixin, mixins.LinkMixin):
+class AnimeBase(sqlmodel.SQLModel, mixins.TimestampsMixin):
     """Base Anime model."""
     title_en: str
     title_jp: str | None

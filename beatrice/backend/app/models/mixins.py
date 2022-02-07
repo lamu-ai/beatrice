@@ -5,7 +5,7 @@ import datetime
 import pydantic
 
 
-class TimestampMixin(pydantic.BaseModel):
+class TimestampsMixin(pydantic.BaseModel):
     """Mixin that defines timestamp fields.
 
     Attributes:
@@ -14,12 +14,3 @@ class TimestampMixin(pydantic.BaseModel):
     """
     created_at: datetime.datetime
     updated_at: datetime.datetime
-
-
-class LinkMixin(pydantic.BaseModel):
-    """Mixin that defines a link field.
-
-    Attributes:
-        link: A link.
-    """
-    link: str

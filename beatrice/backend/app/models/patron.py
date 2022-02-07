@@ -16,18 +16,18 @@ class PatronBase(sqlmodel.SQLModel):
     is_superuser: bool = False
 
 
-class Patron(PatronBase, mixins.TimestampMixin, table=True):
+class Patron(PatronBase, table=True):
     """Patron database model."""
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     hashed_password: str | None = sqlmodel.Field(default=None)
 
 
-class PatronCreate(PatronBase, mixins.TimestampMixin):
+class PatronCreate(PatronBase):
     """Patron create model."""
     password: str
 
 
-class PatronRead(PatronBase, mixins.TimestampMixin):
+class PatronRead(PatronBase):
     """Patron read model."""
     id: int
 
