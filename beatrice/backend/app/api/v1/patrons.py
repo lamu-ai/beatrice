@@ -1,0 +1,107 @@
+"""Patron endpoints."""
+
+from typing import List
+import http
+
+from fastapi import status
+import fastapi
+import sqlmodel
+
+from app.api import dependencies
+from app.core import security
+from app.crud import patron as patron_crud
+from app.models import patron as patron_model
+
+router = fastapi.APIRouter()
+
+
+@router.post("/", response_model=patron_model.PatronRead, status_code=201)
+def create_patron(
+    *,
+    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    patron_in: patron_model.PatronCreate,
+) -> patron_model.Patron:
+    """Creates a new patron."""
+    patron_db = patron_crud.PatronCRUD.get_by_username(session,
+                                                       patron_in.username)
+
+    if patron_db:
+        raise fastapi.HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A patron with this username already exists in the system.",
+        )
+
+    #if settings.EMAILS_ENABLED and patron_in.email:
+    #    send_new_account_email(email_to=patron_in.email,
+    #                           username=patron_in.email,
+    #                           password=patron_in.password)
+
+    patron = patron_crud.PatronCRUD.create(
+        session,
+        model_in=patron_in,
+        update={
+            "hashed_password": security.get_password_hash(patron_in.password)
+        })
+
+    return patron
+
+
+@router.get("/{patron_id}", response_model=patron_model.PatronRead)
+def read_patron(
+    *,
+    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    patron_id: int,
+) -> patron_model.Patron:
+    """Returns a patron given the id."""
+    return patron_crud.PatronCRUD.read(session, patron_id)
+
+
+@router.get("/", response_model=List[patron_model.PatronRead])
+def read_patron_list(
+    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    offset: int = 0,
+    limit: int = fastapi.Query(default=100, le=100),
+) -> List[patron_model.Patron]:
+    """Returns a list of patrons."""
+    return patron_crud.PatronCRUD.read_multi(session,
+                                             offset=offset,
+                                             limit=limit)
+
+
+@router.put("/", response_model=patron_model.PatronRead)
+def update_patron(
+    *,
+    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    patron_id: int,
+    patron_in: patron_model.PatronUpdate,
+) -> patron_model.Patron:
+    """Updates a patron."""
+    patron_db = patron_crud.PatronCRUD.read(session, patron_id)
+
+    if not patron_db:
+        raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Patron not found.")
+
+    patron_db = patron_crud.PatronCRUD.update(session,
+                                              model_db=patron_db,
+                                              model_in=patron_in)
+
+    return patron_db
+
+
+@router.delete("/", status_code=204)
+def delete_patron(
+    *,
+    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    patron_id: int,
+):
+    """Deletes a patron."""
+    patron_db = patron_crud.PatronCRUD.read(session, patron_id)
+
+    if not patron_db:
+        raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Patron not found.")
+
+    patron_crud.PatronCRUD.delete(session, patron_id)
+
+    return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT.value)
