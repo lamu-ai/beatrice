@@ -7,7 +7,7 @@ import sqlmodel
 from app.models import mixins
 
 
-class PatronBase(sqlmodel.SQLModel):
+class PatronBase(sqlmodel.SQLModel, mixins.TimestampsMixin):
     """Base Patron model."""
     username: str = sqlmodel.Field(sa_column_kwargs={"unique": True})
     email: str
