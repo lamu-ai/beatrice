@@ -10,4 +10,7 @@ lint:
 run:
 	( cd beatrice/backend; uvicorn app.main:app --reload )
 
-.PHONY: init
+init-db:
+	( cd beatrice/backend; python -m app.init )
+
+.PHONY: init format lint run init-db
