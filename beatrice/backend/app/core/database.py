@@ -3,7 +3,7 @@
 import sqlmodel
 
 from app.core import config
-from app.models import patron  # pylint: disable=unused-import
+from app.models import anime, patron  # pylint: disable=unused-import
 
 engine = sqlmodel.create_engine(config.settings.DB_URI, pool_pre_ping=True)
 
