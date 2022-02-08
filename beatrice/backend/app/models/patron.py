@@ -13,13 +13,13 @@ class PatronBase(sqlmodel.SQLModel, mixins.TimestampsMixin):
     email: str
     name: str
     is_active: bool = True
-    is_superuser: bool = False
 
 
 class Patron(PatronBase, table=True):
     """Patron database model."""
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     hashed_password: str | None = sqlmodel.Field(default=None)
+    is_superuser: bool = sqlmodel.Field(default=False)
 
 
 class PatronCreate(PatronBase):
@@ -30,6 +30,7 @@ class PatronCreate(PatronBase):
 class PatronRead(PatronBase):
     """Patron read model."""
     id: int
+    is_superuser: bool
 
 
 class PatronUpdate(sqlmodel.SQLModel):

@@ -3,6 +3,7 @@
 from typing import List
 import http
 
+from fastapi import responses
 from fastapi import status
 import fastapi
 import sqlmodel
@@ -20,8 +21,12 @@ def create_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     patron_in: patron_model.PatronCreate,
+    current_patron: patron_model.Patron | None = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_patron_or_none),
 ) -> patron_model.Patron:
     """Creates a new patron."""
+    if current_patron is not None:
+        return responses.RedirectResponse(url="/")
     patron_db = patron_crud.PatronCRUD.get_by_username(session,
                                                        patron_in.username)
 
@@ -51,6 +56,8 @@ def read_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     patron_id: int,
+    current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_patron),
 ) -> patron_model.Patron:
     """Returns a patron given the id."""
     return patron_crud.PatronCRUD.read(session, patron_id)
@@ -61,6 +68,8 @@ def read_patron_list(
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     offset: int = 0,
     limit: int = fastapi.Query(default=100, le=100),
+    current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_patron),
 ) -> List[patron_model.Patron]:
     """Returns a list of patrons."""
     return patron_crud.PatronCRUD.read_multi(session,
@@ -74,6 +83,8 @@ def update_patron(
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     patron_id: int,
     patron_in: patron_model.PatronUpdate,
+    current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_superuser),
 ) -> patron_model.Patron:
     """Updates a patron."""
     patron_db = patron_crud.PatronCRUD.read(session, patron_id)
@@ -94,6 +105,8 @@ def delete_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     patron_id: int,
+    current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_superuser),
 ):
     """Deletes a patron."""
     patron_db = patron_crud.PatronCRUD.read(session, patron_id)
