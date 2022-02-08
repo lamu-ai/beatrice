@@ -1,3 +1,5 @@
+"""Main entrypoint of the application."""
+
 import fastapi
 
 from app.api.v1 import api

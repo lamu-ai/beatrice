@@ -1,3 +1,5 @@
+"""Token models."""
+
 import sqlmodel
 
 
