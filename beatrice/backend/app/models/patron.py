@@ -1,10 +1,14 @@
 """Patron (user of the application) models."""
 
+from typing import List, TYPE_CHECKING
 import datetime
 
 import sqlmodel
 
 from app.models import mixins
+
+if TYPE_CHECKING:
+    from app.models.anime import Anime, AnimeRead
 
 
 class PatronBase(sqlmodel.SQLModel, mixins.TimestampsMixin):
@@ -21,6 +25,8 @@ class Patron(PatronBase, table=True):
     hashed_password: str | None = None
     is_superuser: bool = False
 
+    anime: List["Anime"] = sqlmodel.Relationship(back_populates="patron")
+
 
 class PatronCreate(PatronBase):
     """Patron create model."""
@@ -31,6 +37,11 @@ class PatronRead(PatronBase):
     """Patron read model."""
     id: int
     is_superuser: bool
+
+
+class PatronReadWithMedia(PatronRead):
+    """Patron read model with related media."""
+    anime: List["AnimeRead"] = []
 
 
 class PatronUpdate(sqlmodel.SQLModel):

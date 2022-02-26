@@ -1,13 +1,18 @@
 """Anime models."""
 
+from typing import TYPE_CHECKING
 import datetime
 
 import sqlmodel
 
 from app.models import mixins
 
+if TYPE_CHECKING:
+    from app.models.patron import Patron, PatronRead
 
-class AnimeBase(sqlmodel.SQLModel, mixins.TimestampsMixin):
+
+class AnimeBase(sqlmodel.SQLModel, mixins.TimestampsMixin,
+                mixins.ProposalMixin):
     """Base Anime model."""
     title_en: str
     title_jp: str | None
@@ -21,6 +26,8 @@ class Anime(AnimeBase, table=True):
     """Anime database model."""
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
 
+    patron: "Patron" = sqlmodel.Relationship(back_populates="anime")
+
 
 class AnimeCreate(AnimeBase):
     """Anime create model."""
@@ -29,6 +36,10 @@ class AnimeCreate(AnimeBase):
 class AnimeRead(AnimeBase):
     """Anime base model."""
     id: int
+
+
+class AnimeReadWithPatron(AnimeRead):
+    patron: "PatronRead" = None
 
 
 class AnimeUpdate(sqlmodel.SQLModel):
