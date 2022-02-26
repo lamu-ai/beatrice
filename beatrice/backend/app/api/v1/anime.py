@@ -10,6 +10,7 @@ import sqlmodel
 from app.api import dependencies
 from app.crud import anime as anime_crud
 from app.models import anime
+from app.models import patron
 
 router = fastapi.APIRouter()
 
@@ -19,6 +20,8 @@ def create_anime(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     anime_in: anime.AnimeCreate,
+    current_patron: patron.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_patron),
 ) -> anime.Anime:
     """Creates a new anime."""
     anime_db = anime_crud.AnimeCRUD.get_by_title(session, anime_in.title_en)
@@ -39,11 +42,13 @@ def create_anime(
     return user
 
 
-@router.get("/{anime_id}", response_model=anime.AnimeRead)
+@router.get("/{anime_id}", response_model=anime.AnimeReadWithPatron)
 def read_anime(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     anime_id: int,
+    current_patron: patron.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_patron),
 ) -> anime.Anime:
     """Returns a anime given the id."""
     return anime_crud.AnimeCRUD.read(session, anime_id)
@@ -52,6 +57,8 @@ def read_anime(
 @router.get("/", response_model=List[anime.AnimeRead])
 def read_anime_list(
         session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+        current_patron: patron.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+            dependencies.get_current_active_patron),
         offset: int = 0,
         limit: int = fastapi.Query(default=100, le=100),
 ) -> List[anime.Anime]:
@@ -63,6 +70,8 @@ def read_anime_list(
 def update_anime(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    current_patron: patron.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_patron),
     anime_id: int,
     anime_in: anime.AnimeUpdate,
 ) -> anime.Anime:
@@ -85,6 +94,8 @@ def delete_anime(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     anime_id: int,
+    current_patron: patron.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_superuser),
 ):
     """Deletes an anime."""
     anime_db = anime_crud.AnimeCRUD.read(session, anime_id)

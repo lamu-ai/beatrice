@@ -51,7 +51,7 @@ def create_patron(
     return patron
 
 
-@router.get("/{patron_id}", response_model=patron_model.PatronRead)
+@router.get("/{patron_id}", response_model=patron_model.PatronReadWithMedia)
 def read_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
