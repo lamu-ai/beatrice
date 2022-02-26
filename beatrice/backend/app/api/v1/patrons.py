@@ -64,9 +64,14 @@ def create_patron(
 
 @router.get("/{patron_id}",
             response_model=patron_model.PatronReadWithMedia,
-            responses={401: {
-                "model": response.Response
-            }})
+            responses={
+                401: {
+                    "model": response.Response
+                },
+                404: {
+                    "model": response.Response
+                }
+            })
 def read_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
@@ -75,7 +80,13 @@ def read_patron(
         dependencies.get_current_active_patron),
 ) -> patron_model.Patron:
     """Returns a patron given the id."""
-    return patron_crud.PatronCRUD.read(session, patron_id)
+    patron = patron_crud.PatronCRUD.read(session, patron_id)
+
+    if not patron:
+        raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Patron not found.")
+
+    return patron
 
 
 @router.get("/",
