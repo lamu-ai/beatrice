@@ -12,11 +12,22 @@ from app.api import dependencies
 from app.core import security
 from app.crud import patron as patron_crud
 from app.models import patron as patron_model
+from app.models import response
 
 router = fastapi.APIRouter()
 
 
-@router.post("/", response_model=patron_model.PatronRead, status_code=201)
+@router.post("/",
+             response_model=patron_model.PatronRead,
+             status_code=201,
+             responses={
+                 401: {
+                     "model": response.Response
+                 },
+                 409: {
+                     "model": response.Response
+                 }
+             })
 def create_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
@@ -51,7 +62,11 @@ def create_patron(
     return patron
 
 
-@router.get("/{patron_id}", response_model=patron_model.PatronReadWithMedia)
+@router.get("/{patron_id}",
+            response_model=patron_model.PatronReadWithMedia,
+            responses={401: {
+                "model": response.Response
+            }})
 def read_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
@@ -63,7 +78,11 @@ def read_patron(
     return patron_crud.PatronCRUD.read(session, patron_id)
 
 
-@router.get("/", response_model=List[patron_model.PatronRead])
+@router.get("/",
+            response_model=List[patron_model.PatronRead],
+            responses={401: {
+                "model": response.Response
+            }})
 def read_patron_list(
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     offset: int = 0,
@@ -77,16 +96,60 @@ def read_patron_list(
                                              limit=limit)
 
 
-@router.put("/", response_model=patron_model.PatronRead)
+@router.put("/",
+            response_model=patron_model.PatronRead,
+            responses={
+                401: {
+                    "model": response.Response
+                },
+                404: {
+                    "model": response.Response
+                }
+            })
 def update_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     patron_id: int,
     patron_in: patron_model.PatronUpdate,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
-        dependencies.get_current_active_superuser),
+        dependencies.get_current_active_patron),
 ) -> patron_model.Patron:
     """Updates a patron."""
+    patron_db = patron_crud.PatronCRUD.read(session, patron_id)
+
+    if not patron_db:
+        raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Patron not found.")
+    if current_patron.id != patron_id:
+        raise fastapi.HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="Cannot update another patron.")
+
+    patron_db = patron_crud.PatronCRUD.update(session,
+                                              model_db=patron_db,
+                                              model_in=patron_in)
+
+    return patron_db
+
+
+@router.put("/su_update",
+            response_model=patron_model.PatronRead,
+            responses={
+                401: {
+                    "model": response.Response
+                },
+                404: {
+                    "model": response.Response
+                }
+            })
+def update_patron_as_superuser(
+    *,
+    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    patron_id: int,
+    patron_in: patron_model.PatronUpdateAsSuperuser,
+    current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
+        dependencies.get_current_active_superuser),
+) -> patron_model.Patron:
+    """Updates a patron as a superuser."""
     patron_db = patron_crud.PatronCRUD.read(session, patron_id)
 
     if not patron_db:
@@ -100,7 +163,11 @@ def update_patron(
     return patron_db
 
 
-@router.delete("/", status_code=204)
+@router.delete("/",
+               status_code=status.HTTP_204_NO_CONTENT,
+               responses={401: {
+                   "model": response.Response
+               }})
 def delete_patron(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),

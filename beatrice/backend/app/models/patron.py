@@ -1,7 +1,6 @@
 """Patron (user of the application) models."""
 
 from typing import List, TYPE_CHECKING
-import datetime
 
 import sqlmodel
 
@@ -11,18 +10,18 @@ if TYPE_CHECKING:
     from app.models.anime import Anime, AnimeRead
 
 
-class PatronBase(sqlmodel.SQLModel, mixins.TimestampsMixin):
+class PatronBase(sqlmodel.SQLModel):
     """Base Patron model."""
     username: str = sqlmodel.Field(sa_column_kwargs={"unique": True})
     email: str
     name: str
-    is_active: bool = True
 
 
-class Patron(PatronBase, table=True):
+class Patron(PatronBase, mixins.TimestampsMixin, table=True):
     """Patron database model."""
     id: int | None = sqlmodel.Field(default=None, primary_key=True)
     hashed_password: str | None = None
+    is_active: bool = True
     is_superuser: bool = False
 
     anime: List["Anime"] = sqlmodel.Relationship(back_populates="patron")
@@ -36,6 +35,7 @@ class PatronCreate(PatronBase):
 class PatronRead(PatronBase):
     """Patron read model."""
     id: int
+    is_active: bool
     is_superuser: bool
 
 
@@ -50,6 +50,9 @@ class PatronUpdate(sqlmodel.SQLModel):
     email: str | None = None
     password: str | None = None
     name: str | None = None
-    is_active: bool | None = True
-    is_superuser: bool | None = False
-    updated_at: datetime.datetime
+
+
+class PatronUpdateAsSuperuser(PatronUpdate):
+    """Patron update model as a superuser."""
+    is_active: bool = True
+    is_superuser: bool = False
