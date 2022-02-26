@@ -20,7 +20,7 @@ class AnimeCRUD(base.BaseCRUD[anime.Anime, anime.AnimeCreate,
 
         Args:
             session: The database session.
-            title: The anime's username.
+            title: The anime's title.
         """
         return session.exec(
             sqlmodel.select(

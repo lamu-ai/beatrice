@@ -113,7 +113,7 @@ def update_anime(
     anime_id: int,
     anime_in: anime_model.AnimeUpdate,
 ) -> anime_model.Anime:
-    """Updates a anime."""
+    """Updates an anime."""
     anime_db = anime_crud.AnimeCRUD.read(session, anime_id)
 
     if not anime_db:
