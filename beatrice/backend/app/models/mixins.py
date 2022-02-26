@@ -26,7 +26,7 @@ class ProposalMixin(pydantic.BaseModel):
     Attributes:
         proposed_by: The id of the patron who proposed the media.
     """
-    proposed_by: int = sqlmodel.Field(default=None, foreign_key="patron.id")
+    proposed_by: int = sqlmodel.Field(foreign_key="patron.id")
 
 
 class LinksMixin(pydantic.BaseModel):
