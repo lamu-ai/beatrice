@@ -1,4 +1,4 @@
-"""Anime endpoints."""
+"""Manga endpoints."""
 
 from typing import List
 import http
@@ -8,8 +8,8 @@ import fastapi
 import sqlmodel
 
 from app.api import dependencies
-from app.crud import anime as anime_crud
-from app.models import anime as anime_model
+from app.crud import manga as manga_crud
+from app.models import manga as manga_model
 from app.models import patron as patron_model
 from app.models import response
 
@@ -17,7 +17,7 @@ router = fastapi.APIRouter()
 
 
 @router.post("/",
-             response_model=anime_model.AnimeRead,
+             response_model=manga_model.MangaRead,
              status_code=201,
              responses={
                  401: {
@@ -27,33 +27,33 @@ router = fastapi.APIRouter()
                      "model": response.Response
                  }
              })
-def create_anime(
+def create_manga(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    anime_in: anime_model.AnimeCreate,
+    manga_in: manga_model.MangaCreate,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-) -> anime_model.Anime:
-    """Creates a new anime."""
-    anime_db = anime_crud.AnimeCRUD.get_by_title(session, anime_in.title_en)
+) -> manga_model.Manga:
+    """Creates a new manga."""
+    manga_db = manga_crud.MangaCRUD.get_by_title(session, manga_in.title_en)
 
-    if anime_db:
+    if manga_db:
         raise fastapi.HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An anime with this title already exists in the system.",
+            detail="An manga with this title already exists in the system.",
         )
-    if current_patron.id != anime_in.proposed_by:
+    if current_patron.id != manga_in.proposed_by:
         raise fastapi.HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    anime = anime_crud.AnimeCRUD.create(session, model_in=anime_in)
+    manga = manga_crud.MangaCRUD.create(session, model_in=manga_in)
 
-    return anime
+    return manga
 
 
-@router.get("/{anime_id}",
-            response_model=anime_model.AnimeReadWithPatron,
+@router.get("/{manga_id}",
+            response_model=manga_model.MangaReadWithPatron,
             responses={
                 401: {
                     "model": response.Response
@@ -62,41 +62,41 @@ def create_anime(
                     "model": response.Response
                 }
             })
-def read_anime(
+def read_manga(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    anime_id: int,
+    manga_id: int,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-) -> anime_model.Anime:
-    """Returns an anime given the id."""
-    anime = anime_crud.AnimeCRUD.read(session, anime_id)
+) -> manga_model.Manga:
+    """Returns a manga given the id."""
+    manga = manga_crud.MangaCRUD.read(session, manga_id)
 
-    if not anime:
+    if not manga:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail="Anime not found.")
+                                    detail="Manga not found.")
 
-    return anime
+    return manga
 
 
 @router.get("/",
-            response_model=List[anime_model.AnimeRead],
+            response_model=List[manga_model.MangaRead],
             responses={401: {
                 "model": response.Response
             }})
-def read_anime_list(
+def read_manga_list(
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
     offset: int = 0,
     limit: int = fastapi.Query(default=100, le=100),
-) -> List[anime_model.Anime]:
-    """Returns a list of anime."""
-    return anime_crud.AnimeCRUD.read_multi(session, offset=offset, limit=limit)
+) -> List[manga_model.Manga]:
+    """Returns a list of manga."""
+    return manga_crud.MangaCRUD.read_multi(session, offset=offset, limit=limit)
 
 
 @router.put("/",
-            response_model=anime_model.AnimeRead,
+            response_model=manga_model.MangaRead,
             responses={
                 401: {
                     "model": response.Response
@@ -105,30 +105,30 @@ def read_anime_list(
                     "model": response.Response
                 }
             })
-def update_anime(
+def update_manga(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-    anime_id: int,
-    anime_in: anime_model.AnimeUpdate,
-) -> anime_model.Anime:
-    """Updates an anime."""
-    anime_db = anime_crud.AnimeCRUD.read(session, anime_id)
+    manga_id: int,
+    manga_in: manga_model.MangaUpdate,
+) -> manga_model.Manga:
+    """Updates a manga."""
+    manga_db = manga_crud.MangaCRUD.read(session, manga_id)
 
-    if not anime_db:
+    if not manga_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail="Anime not found.")
-    if current_patron.id != anime_db.proposed_by:
+                                    detail="Manga not found.")
+    if current_patron.id != manga_db.proposed_by:
         raise fastapi.HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    anime_db = anime_crud.AnimeCRUD.update(session,
-                                           model_db=anime_db,
-                                           model_in=anime_in)
+    manga_db = manga_crud.MangaCRUD.update(session,
+                                           model_db=manga_db,
+                                           model_in=manga_in)
 
-    return anime_db
+    return manga_db
 
 
 @router.delete("/",
@@ -141,20 +141,20 @@ def update_anime(
                        "model": response.Response
                    }
                })
-def delete_anime(
+def delete_manga(
     *,
     session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    anime_id: int,
+    manga_id: int,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_superuser),
 ):
-    """Deletes an anime."""
-    anime_db = anime_crud.AnimeCRUD.read(session, anime_id)
+    """Deletes a manga."""
+    manga_db = manga_crud.MangaCRUD.read(session, manga_id)
 
-    if not anime_db:
+    if not manga_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail="Anime not found.")
+                                    detail="Manga not found.")
 
-    anime_crud.AnimeCRUD.delete(session, anime_id)
+    manga_crud.MangaCRUD.delete(session, manga_id)
 
     return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT.value)
