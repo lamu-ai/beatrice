@@ -14,9 +14,9 @@ class TimestampsMixin(pydantic.BaseModel):
         updated_at: A timestamp representing when the object was updated.
     """
     created_at: datetime.datetime = sqlmodel.Field(
-        default=datetime.datetime.utcnow())
+        default_factory=datetime.datetime.utcnow)
     updated_at: datetime.datetime = sqlmodel.Field(
-        default=datetime.datetime.utcnow(),
+        default_factory=datetime.datetime.utcnow,
         sa_column_kwargs={"onupdate": datetime.datetime.now})
 
 
