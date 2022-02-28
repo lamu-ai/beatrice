@@ -4,6 +4,7 @@ import sqlmodel
 
 from app.core import config
 from app.models import anime  # pylint: disable=unused-import
+from app.models import book  # pylint: disable=unused-import
 from app.models import manga  # pylint: disable=unused-import
 from app.models import movie  # pylint: disable=unused-import
 from app.models import patron  # pylint: disable=unused-import
