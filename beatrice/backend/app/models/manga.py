@@ -1,7 +1,7 @@
 """Manga models."""
 
-import typing
 import datetime
+import typing
 
 import pydantic
 import sqlmodel
@@ -36,9 +36,8 @@ class MangaBase(sqlmodel.SQLModel, mixins.ProposalMixin, mixins.LinksMixin):
         return date
 
 
-class Manga(MangaBase, mixins.TimestampsMixin, table=True):
+class Manga(MangaBase, mixins.TimestampsMixin, mixins.BaseMixin, table=True):
     """Manga database model."""
-    id: int | None = sqlmodel.Field(default=None, primary_key=True)
 
     patron: "Patron" = sqlmodel.Relationship(back_populates="manga")
 
@@ -49,7 +48,7 @@ class MangaCreate(MangaBase):
 
 class MangaRead(MangaBase):
     """Manga base model."""
-    id: int
+    id: pydantic.UUID4
 
 
 class MangaReadWithPatron(MangaRead):

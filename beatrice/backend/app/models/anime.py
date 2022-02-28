@@ -2,6 +2,7 @@
 
 import typing
 
+import pydantic
 import sqlmodel
 
 from app.models import mixins
@@ -20,9 +21,8 @@ class AnimeBase(sqlmodel.SQLModel, mixins.ProposalMixin, mixins.LinksMixin):
     notes: str | None
 
 
-class Anime(AnimeBase, mixins.TimestampsMixin, table=True):
+class Anime(AnimeBase, mixins.TimestampsMixin, mixins.BaseMixin, table=True):
     """Anime database model."""
-    id: int | None = sqlmodel.Field(default=None, primary_key=True)
 
     patron: "Patron" = sqlmodel.Relationship(back_populates="anime")
 
@@ -33,7 +33,7 @@ class AnimeCreate(AnimeBase):
 
 class AnimeRead(AnimeBase):
     """Anime base model."""
-    id: int
+    id: pydantic.UUID4
 
 
 class AnimeReadWithPatron(AnimeRead):

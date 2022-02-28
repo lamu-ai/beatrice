@@ -1,9 +1,23 @@
 """Mixins."""
 
 import datetime
+import uuid
 
 import pydantic
 import sqlmodel
+
+
+class BaseMixin(pydantic.BaseModel):
+    """Base mixin class.
+
+    This mixin contains fields common to all models and, as such,
+    should always be inherited from.
+
+    Attributes:
+        id: The primary key of the model.
+    """
+    id: pydantic.UUID4 | None = sqlmodel.Field(default_factory=uuid.uuid4,
+                                               primary_key=True)
 
 
 class TimestampsMixin(pydantic.BaseModel):
@@ -26,7 +40,7 @@ class ProposalMixin(pydantic.BaseModel):
     Attributes:
         proposed_by: The id of the patron who proposed the media.
     """
-    proposed_by: int = sqlmodel.Field(foreign_key="patron.id")
+    proposed_by: pydantic.UUID4 = sqlmodel.Field(foreign_key="patron.id")
 
 
 class LinksMixin(pydantic.BaseModel):

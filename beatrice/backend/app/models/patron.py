@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from app.models.manga import Manga, MangaRead
 
 
-def capitalize_words(name: str):
+def capitalize_name(name: str):
     """Capitalizes every word of the input.
 
     Params:
@@ -33,12 +33,11 @@ class PatronBase(sqlmodel.SQLModel):
     name: str
 
     _capitalize_name = pydantic.validator("name", pre=True,
-                                          allow_reuse=True)(capitalize_words)
+                                          allow_reuse=True)(capitalize_name)
 
 
-class Patron(PatronBase, mixins.TimestampsMixin, table=True):
+class Patron(PatronBase, mixins.TimestampsMixin, mixins.BaseMixin, table=True):
     """Patron database model."""
-    id: int | None = sqlmodel.Field(default=None, primary_key=True)
     hashed_password: str | None = None
     is_active: bool = True
     is_superuser: bool = False
@@ -54,7 +53,7 @@ class PatronCreate(PatronBase):
 
 class PatronRead(PatronBase):
     """Patron read model."""
-    id: int
+    id: pydantic.UUID4
     is_active: bool
     is_superuser: bool
 
@@ -74,7 +73,7 @@ class PatronUpdate(sqlmodel.SQLModel):
     name: str | None = None
 
     _capitalize_name = pydantic.validator("name", pre=True,
-                                          allow_reuse=True)(capitalize_words)
+                                          allow_reuse=True)(capitalize_name)
 
 
 class PatronUpdateAsSuperuser(PatronUpdate):
