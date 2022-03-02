@@ -12,6 +12,7 @@ if typing.TYPE_CHECKING:
     from app.models.anime import Anime, AnimeRead
     from app.models.manga import Manga, MangaRead
     from app.models.movie import Movie, MovieRead
+    from app.models.book import Book, BookRead
 
 
 def capitalize_name(name: str):
@@ -46,6 +47,7 @@ class Patron(PatronBase, mixins.TimestampsMixin, mixins.BaseMixin, table=True):
     anime: List["Anime"] = sqlmodel.Relationship(back_populates="patron")
     manga: List["Manga"] = sqlmodel.Relationship(back_populates="patron")
     movies: List["Movie"] = sqlmodel.Relationship(back_populates="patron")
+    books: List["Book"] = sqlmodel.Relationship(back_populates="patron")
 
 
 class PatronCreate(PatronBase):
@@ -64,6 +66,8 @@ class PatronReadWithMedia(PatronRead):
     """Patron read model with related media."""
     anime: List["AnimeRead"] = []
     manga: List["MangaRead"] = []
+    movies: List["MovieRead"] = []
+    books: List["BookRead"] = []
 
 
 class PatronUpdate(sqlmodel.SQLModel):
