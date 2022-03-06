@@ -1,6 +1,7 @@
 """Anime CRUD controller."""
 
 import sqlmodel
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.crud import base
 from app.models import anime
@@ -14,14 +15,14 @@ class AnimeCRUD(base.BaseCRUD[anime.Anime, anime.AnimeCreate,
     """
 
     @classmethod
-    def get_by_title(cls, session: sqlmodel.Session,
-                     title: str) -> anime.Anime | None:
+    async def get_by_title(cls, session: aio_session.AsyncSession,
+                           title: str) -> anime.Anime | None:
         """Gets an anime by their title.
 
         Args:
             session: The database session.
             title: The anime's title.
         """
-        return session.exec(
-            sqlmodel.select(
-                anime.Anime).where(anime.Anime.title_en == title)).first()
+        anime_list = await session.exec(
+            sqlmodel.select(anime.Anime).where(anime.Anime.title_en == title))
+        return anime_list.first()

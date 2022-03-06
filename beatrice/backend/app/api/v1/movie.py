@@ -1,11 +1,12 @@
 """Movie endpoints."""
 
-from typing import List
 import http
+from typing import List
 
-from fastapi import status
 import fastapi
-import sqlmodel
+import pydantic
+from fastapi import status
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.api import dependencies
 from app.crud import movie as movie_crud
@@ -27,15 +28,17 @@ router = fastapi.APIRouter()
                      "model": response.Response
                  }
              })
-def create_movie(
+async def create_movie(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     movie_in: movie_model.MovieCreate,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> movie_model.Movie:
     """Creates a new movie."""
-    movie_db = movie_crud.MovieCRUD.get_by_title(session, movie_in.title_en)
+    movie_db = await movie_crud.MovieCRUD.get_by_title(session,
+                                                       movie_in.title_en)
 
     if movie_db:
         raise fastapi.HTTPException(
@@ -47,7 +50,7 @@ def create_movie(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    movie = movie_crud.MovieCRUD.create(session, model_in=movie_in)
+    movie = await movie_crud.MovieCRUD.create(session, model_in=movie_in)
 
     return movie
 
@@ -62,15 +65,16 @@ def create_movie(
                     "model": response.Response
                 }
             })
-def read_movie(
+async def read_movie(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    movie_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    movie_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> movie_model.Movie:
     """Returns a movie given the id."""
-    movie = movie_crud.MovieCRUD.read(session, movie_id)
+    movie = await movie_crud.MovieCRUD.read(session, movie_id)
 
     if not movie:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -84,15 +88,18 @@ def read_movie(
             responses={401: {
                 "model": response.Response
             }})
-def read_movie_list(
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+async def read_movie_list(
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
     offset: int = 0,
     limit: int = fastapi.Query(default=100, le=100),
 ) -> List[movie_model.Movie]:
     """Returns a list of movies."""
-    return movie_crud.MovieCRUD.read_multi(session, offset=offset, limit=limit)
+    return await movie_crud.MovieCRUD.read_multi(session,
+                                                 offset=offset,
+                                                 limit=limit)
 
 
 @router.put("/",
@@ -105,16 +112,17 @@ def read_movie_list(
                     "model": response.Response
                 }
             })
-def update_movie(
+async def update_movie(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-    movie_id: int,
+    movie_id: pydantic.UUID4,
     movie_in: movie_model.MovieUpdate,
 ) -> movie_model.Movie:
     """Updates a movie."""
-    movie_db = movie_crud.MovieCRUD.read(session, movie_id)
+    movie_db = await movie_crud.MovieCRUD.read(session, movie_id)
 
     if not movie_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -124,9 +132,9 @@ def update_movie(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    movie_db = movie_crud.MovieCRUD.update(session,
-                                           model_db=movie_db,
-                                           model_in=movie_in)
+    movie_db = await movie_crud.MovieCRUD.update(session,
+                                                 model_db=movie_db,
+                                                 model_in=movie_in)
 
     return movie_db
 
@@ -141,20 +149,21 @@ def update_movie(
                        "model": response.Response
                    }
                })
-def delete_movie(
+async def delete_movie(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    movie_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    movie_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_superuser),
 ):
     """Deletes a movie."""
-    movie_db = movie_crud.MovieCRUD.read(session, movie_id)
+    movie_db = await movie_crud.MovieCRUD.read(session, movie_id)
 
     if not movie_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail="Movie not found.")
 
-    movie_crud.MovieCRUD.delete(session, movie_id)
+    await movie_crud.MovieCRUD.delete(session, movie_id)
 
     return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT.value)

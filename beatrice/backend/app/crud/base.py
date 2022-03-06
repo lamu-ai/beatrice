@@ -4,6 +4,7 @@ import abc
 from typing import Any, Dict, Generic, get_args, List, TypeVar
 
 import sqlmodel
+from sqlmodel.ext.asyncio import session as aio_session
 
 ModelType = TypeVar("ModelType", bound=sqlmodel.SQLModel)
 CreateModelType = TypeVar("CreateModelType", bound=ModelType)
@@ -18,11 +19,11 @@ class BaseCRUD(Generic[ModelType, CreateModelType, UpdateModelType],
     """
 
     @classmethod
-    def create(cls,
-               session: sqlmodel.Session,
-               *,
-               model_in: CreateModelType,
-               update: Dict[str, Any] | None = None) -> ModelType:
+    async def create(cls,
+                     session: aio_session.AsyncSession,
+                     *,
+                     model_in: CreateModelType,
+                     update: Dict[str, Any] | None = None) -> ModelType:
         """Creates a new model.
 
         Args:
@@ -35,13 +36,14 @@ class BaseCRUD(Generic[ModelType, CreateModelType, UpdateModelType],
         model_db = get_args(cls.__orig_bases__[0])[0].from_orm(model_in, update)
 
         session.add(model_db)
-        session.commit()
-        session.refresh(model_db)
+        await session.commit()
+        await session.refresh(model_db)
 
         return model_db
 
     @classmethod
-    def read(cls, session: sqlmodel.Session, model_id: Any) -> ModelType | None:
+    async def read(cls, session: aio_session.AsyncSession,
+                   model_id: Any) -> ModelType | None:
         """Reads a model given its id.
 
         Args:
@@ -51,14 +53,14 @@ class BaseCRUD(Generic[ModelType, CreateModelType, UpdateModelType],
         Returns:
             A model or None if the model could not be found.
         """
-        return session.get(get_args(cls.__orig_bases__[0])[0], model_id)
+        return await session.get(get_args(cls.__orig_bases__[0])[0], model_id)
 
     @classmethod
-    def read_multi(cls,
-                   session: sqlmodel.Session,
-                   *,
-                   offset: int = 0,
-                   limit: int = 100) -> List[ModelType]:
+    async def read_multi(cls,
+                         session: aio_session.AsyncSession,
+                         *,
+                         offset: int = 0,
+                         limit: int = 100) -> List[ModelType]:
         """Reads the first `limit` models starting at the `offset` position.
 
         Args:
@@ -69,13 +71,16 @@ class BaseCRUD(Generic[ModelType, CreateModelType, UpdateModelType],
         Returns:
             A list of models.
         """
-        return session.exec(
+        models = await session.exec(
             sqlmodel.select(get_args(
-                cls.__orig_bases__[0])[0]).offset(offset).limit(limit)).all()
+                cls.__orig_bases__[0])[0]).offset(offset).limit(limit))
+
+        return models.all()
 
     @classmethod
-    def update(cls, session: sqlmodel.Session, *, model_db: ModelType,
-               model_in: UpdateModelType | Dict[str, Any]) -> ModelType:
+    async def update(cls, session: aio_session.AsyncSession, *,
+                     model_db: ModelType,
+                     model_in: UpdateModelType | Dict[str, Any]) -> ModelType:
         """Updates a model.
 
         Args:
@@ -94,20 +99,21 @@ class BaseCRUD(Generic[ModelType, CreateModelType, UpdateModelType],
             setattr(model_db, field, value)
 
         session.add(model_db)
-        session.commit()
-        session.refresh(model_db)
+        await session.commit()
+        await session.refresh(model_db)
 
         return model_db
 
     @classmethod
-    def delete(cls, session: sqlmodel.Session, model_id: Any):
+    async def delete(cls, session: aio_session.AsyncSession, model_id: Any):
         """Deletes a model.
 
         Args:
             session: The database session.
             model_id: The id of the model.
         """
-        model_db = session.get(get_args(cls.__orig_bases__[0])[0], model_id)
+        model_db = await session.get(
+            get_args(cls.__orig_bases__[0])[0], model_id)
 
-        session.delete(model_db)
-        session.commit()
+        await session.delete(model_db)
+        await session.commit()

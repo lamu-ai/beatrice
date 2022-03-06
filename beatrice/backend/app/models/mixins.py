@@ -17,7 +17,8 @@ class BaseMixin(pydantic.BaseModel):
         id: The primary key of the model.
     """
     id: pydantic.UUID4 | None = sqlmodel.Field(default_factory=uuid.uuid4,
-                                               primary_key=True)
+                                               primary_key=True,
+                                               nullable=False)
 
 
 class TimestampsMixin(pydantic.BaseModel):

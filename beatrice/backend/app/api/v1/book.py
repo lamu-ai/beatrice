@@ -1,11 +1,12 @@
 """Book endpoints."""
 
-from typing import List
 import http
+from typing import List
 
-from fastapi import status
 import fastapi
-import sqlmodel
+import pydantic
+from fastapi import status
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.api import dependencies
 from app.crud import book as book_crud
@@ -27,15 +28,16 @@ router = fastapi.APIRouter()
                      "model": response.Response
                  }
              })
-def create_book(
+async def create_book(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     book_in: book_model.BookCreate,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> book_model.Book:
     """Creates a new book."""
-    book_db = book_crud.BookCRUD.get_by_title(session, book_in.title_en)
+    book_db = await book_crud.BookCRUD.get_by_title(session, book_in.title_en)
 
     if book_db:
         raise fastapi.HTTPException(
@@ -47,7 +49,7 @@ def create_book(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    book = book_crud.BookCRUD.create(session, model_in=book_in)
+    book = await book_crud.BookCRUD.create(session, model_in=book_in)
 
     return book
 
@@ -62,15 +64,16 @@ def create_book(
                     "model": response.Response
                 }
             })
-def read_book(
+async def read_book(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    book_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    book_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> book_model.Book:
     """Returns a book given the id."""
-    book = book_crud.BookCRUD.read(session, book_id)
+    book = await book_crud.BookCRUD.read(session, book_id)
 
     if not book:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -84,15 +87,18 @@ def read_book(
             responses={401: {
                 "model": response.Response
             }})
-def read_book_list(
-        session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+async def read_book_list(
+        session: aio_session.AsyncSession = fastapi.Depends(
+            dependencies.get_session),
         current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
             dependencies.get_current_active_patron),
         offset: int = 0,
         limit: int = fastapi.Query(default=100, le=100),
 ) -> List[book_model.Book]:
     """Returns a list of books."""
-    return book_crud.BookCRUD.read_multi(session, offset=offset, limit=limit)
+    return await book_crud.BookCRUD.read_multi(session,
+                                               offset=offset,
+                                               limit=limit)
 
 
 @router.put("/",
@@ -105,16 +111,17 @@ def read_book_list(
                     "model": response.Response
                 }
             })
-def update_book(
+async def update_book(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-    book_id: int,
+    book_id: pydantic.UUID4,
     book_in: book_model.BookUpdate,
 ) -> book_model.Book:
     """Updates a book."""
-    book_db = book_crud.BookCRUD.read(session, book_id)
+    book_db = await book_crud.BookCRUD.read(session, book_id)
 
     if not book_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -124,9 +131,9 @@ def update_book(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    book_db = book_crud.BookCRUD.update(session,
-                                        model_db=book_db,
-                                        model_in=book_in)
+    book_db = await book_crud.BookCRUD.update(session,
+                                              model_db=book_db,
+                                              model_in=book_in)
 
     return book_db
 
@@ -141,20 +148,21 @@ def update_book(
                        "model": response.Response
                    }
                })
-def delete_book(
+async def delete_book(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    book_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    book_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_superuser),
 ):
     """Deletes a book."""
-    book_db = book_crud.BookCRUD.read(session, book_id)
+    book_db = await book_crud.BookCRUD.read(session, book_id)
 
     if not book_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail="Book not found.")
 
-    book_crud.BookCRUD.delete(session, book_id)
+    await book_crud.BookCRUD.delete(session, book_id)
 
     return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT.value)

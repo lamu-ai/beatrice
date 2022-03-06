@@ -3,6 +3,7 @@
 from typing import Any, Dict
 
 import sqlmodel
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.core import security
 from app.crud import base
@@ -18,8 +19,9 @@ class PatronCRUD(base.BaseCRUD[patron.Patron, patron.PatronCreate,
     """
 
     @classmethod
-    def update(cls, session: sqlmodel.Session, *, model_db: patron.Patron,
-               model_in: patron.PatronUpdate | Dict[str, Any]) -> patron.Patron:
+    async def update(
+            cls, session: aio_session.AsyncSession, *, model_db: patron.Patron,
+            model_in: patron.PatronUpdate | Dict[str, Any]) -> patron.Patron:
         """Updates a patron.
 
         Args:
@@ -41,11 +43,13 @@ class PatronCRUD(base.BaseCRUD[patron.Patron, patron.PatronCreate,
             del update_data["password"]
             update_data["hashed_password"] = hashed_password
 
-        return super().update(session, model_db=model_db, model_in=update_data)
+        return await super().update(session,
+                                    model_db=model_db,
+                                    model_in=update_data)
 
     @classmethod
-    def get_by_username(cls, session: sqlmodel.Session,
-                        username: str) -> patron.Patron | None:
+    async def get_by_username(cls, session: aio_session.AsyncSession,
+                              username: str) -> patron.Patron | None:
         """Gets a patron by their username.
 
         Args:
@@ -55,13 +59,15 @@ class PatronCRUD(base.BaseCRUD[patron.Patron, patron.PatronCreate,
         Returns:
             The patron with the given username.
         """
-        return session.exec(
-            sqlmodel.select(patron.Patron).where(
-                patron.Patron.username == username)).first()
+        patrons = await session.exec(
+            sqlmodel.select(
+                patron.Patron).where(patron.Patron.username == username))
+
+        return patrons.first()
 
     @classmethod
-    def authenticate(cls, session: sqlmodel.Session, *, username: str,
-                     password: str) -> patron.Patron:
+    async def authenticate(cls, session: aio_session.AsyncSession, *,
+                           username: str, password: str) -> patron.Patron:
         """Authenticates the patron with given username and password.
 
         Args:
@@ -72,7 +78,7 @@ class PatronCRUD(base.BaseCRUD[patron.Patron, patron.PatronCreate,
         Returns:
             The authenticated patron.
         """
-        user = PatronCRUD.get_by_username(session, username)
+        user = await PatronCRUD.get_by_username(session, username)
 
         if not user:
             return None

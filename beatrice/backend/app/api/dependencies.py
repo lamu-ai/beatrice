@@ -1,10 +1,11 @@
 """Dependencies definitions."""
 
-from fastapi import security, status
-from jose import jwt
 import fastapi
 import jose
 import sqlmodel
+from fastapi import security, status
+from jose import jwt
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.core import config
 from app.core import database
@@ -19,14 +20,14 @@ optional_oauth2_scheme = security.OAuth2PasswordBearer(
     tokenUrl=f"{config.settings.API_V1_STR}/login/token", auto_error=False)
 
 
-def get_session():
+async def get_session() -> aio_session.AsyncSession:
     """Yields the database session."""
-    with sqlmodel.Session(database.engine) as session:
+    async with database.Session() as session:
         yield session
 
 
 async def get_current_patron(
-        session: sqlmodel.Session = fastapi.Depends(get_session),
+        session: aio_session.AsyncSession = fastapi.Depends(get_session),
         token: str = fastapi.Depends(oauth2_scheme)) -> patronmodel.Patron:
     """Returns the current authenticated patron.
 
@@ -53,9 +54,10 @@ async def get_current_patron(
     except jose.JWTError as subject_missing:
         raise credentials_exception from subject_missing
 
-    patron = session.exec(
+    patrons = await session.exec(
         sqlmodel.select(patronmodel.Patron).where(
-            patronmodel.Patron.username == token_data.subject)).first()
+            patronmodel.Patron.username == token_data.subject))
+    patron = patrons.first()
 
     if patron is None:
         raise credentials_exception
@@ -64,7 +66,7 @@ async def get_current_patron(
 
 
 async def get_current_patron_or_none(
-        session: sqlmodel.Session = fastapi.Depends(get_session),
+        session: aio_session.AsyncSession = fastapi.Depends(get_session),
         token: str = fastapi.Depends(optional_oauth2_scheme)
 ) -> patronmodel.Patron | None:
     """Returns the current authenticated patron or `None`.

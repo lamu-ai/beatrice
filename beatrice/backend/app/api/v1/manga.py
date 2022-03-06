@@ -1,11 +1,12 @@
 """Manga endpoints."""
 
-from typing import List
 import http
+from typing import List
 
-from fastapi import status
 import fastapi
-import sqlmodel
+import pydantic
+from fastapi import status
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.api import dependencies
 from app.crud import manga as manga_crud
@@ -27,15 +28,17 @@ router = fastapi.APIRouter()
                      "model": response.Response
                  }
              })
-def create_manga(
+async def create_manga(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     manga_in: manga_model.MangaCreate,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> manga_model.Manga:
     """Creates a new manga."""
-    manga_db = manga_crud.MangaCRUD.get_by_title(session, manga_in.title_en)
+    manga_db = await manga_crud.MangaCRUD.get_by_title(session,
+                                                       manga_in.title_en)
 
     if manga_db:
         raise fastapi.HTTPException(
@@ -47,7 +50,7 @@ def create_manga(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    manga = manga_crud.MangaCRUD.create(session, model_in=manga_in)
+    manga = await manga_crud.MangaCRUD.create(session, model_in=manga_in)
 
     return manga
 
@@ -62,15 +65,16 @@ def create_manga(
                     "model": response.Response
                 }
             })
-def read_manga(
+async def read_manga(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    manga_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    manga_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> manga_model.Manga:
     """Returns a manga given the id."""
-    manga = manga_crud.MangaCRUD.read(session, manga_id)
+    manga = await manga_crud.MangaCRUD.read(session, manga_id)
 
     if not manga:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -84,15 +88,18 @@ def read_manga(
             responses={401: {
                 "model": response.Response
             }})
-def read_manga_list(
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+async def read_manga_list(
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
     offset: int = 0,
     limit: int = fastapi.Query(default=100, le=100),
 ) -> List[manga_model.Manga]:
     """Returns a list of manga."""
-    return manga_crud.MangaCRUD.read_multi(session, offset=offset, limit=limit)
+    return await manga_crud.MangaCRUD.read_multi(session,
+                                                 offset=offset,
+                                                 limit=limit)
 
 
 @router.put("/",
@@ -105,16 +112,17 @@ def read_manga_list(
                     "model": response.Response
                 }
             })
-def update_manga(
+async def update_manga(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-    manga_id: int,
+    manga_id: pydantic.UUID4,
     manga_in: manga_model.MangaUpdate,
 ) -> manga_model.Manga:
     """Updates a manga."""
-    manga_db = manga_crud.MangaCRUD.read(session, manga_id)
+    manga_db = await manga_crud.MangaCRUD.read(session, manga_id)
 
     if not manga_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -124,9 +132,9 @@ def update_manga(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    manga_db = manga_crud.MangaCRUD.update(session,
-                                           model_db=manga_db,
-                                           model_in=manga_in)
+    manga_db = await manga_crud.MangaCRUD.update(session,
+                                                 model_db=manga_db,
+                                                 model_in=manga_in)
 
     return manga_db
 
@@ -141,20 +149,21 @@ def update_manga(
                        "model": response.Response
                    }
                })
-def delete_manga(
+async def delete_manga(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    manga_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    manga_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_superuser),
 ):
     """Deletes a manga."""
-    manga_db = manga_crud.MangaCRUD.read(session, manga_id)
+    manga_db = await manga_crud.MangaCRUD.read(session, manga_id)
 
     if not manga_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail="Manga not found.")
 
-    manga_crud.MangaCRUD.delete(session, manga_id)
+    await manga_crud.MangaCRUD.delete(session, manga_id)
 
     return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT.value)

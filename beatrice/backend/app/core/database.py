@@ -1,18 +1,14 @@
 """Database utils and configuration."""
 
-import sqlmodel
+from sqlalchemy import orm
+from sqlalchemy.ext import asyncio
+from sqlmodel.ext.asyncio import session
 
 from app.core import config
-from app.models import anime  # pylint: disable=unused-import
-from app.models import book  # pylint: disable=unused-import
-from app.models import manga  # pylint: disable=unused-import
-from app.models import movie  # pylint: disable=unused-import
-from app.models import patron  # pylint: disable=unused-import
 
-engine = sqlmodel.create_engine(config.settings.DB_URI, pool_pre_ping=True)
-
-
-def create_db_and_tables():
-    """Initialises the database."""
-    sqlmodel.SQLModel.metadata.drop_all(engine)
-    sqlmodel.SQLModel.metadata.create_all(engine)
+engine = asyncio.create_async_engine(config.settings.DB_URI,
+                                     pool_pre_ping=True,
+                                     future=True)
+Session = orm.sessionmaker(engine,
+                           class_=session.AsyncSession,
+                           expire_on_commit=False)

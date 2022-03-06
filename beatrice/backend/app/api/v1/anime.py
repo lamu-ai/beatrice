@@ -1,11 +1,12 @@
 """Anime endpoints."""
 
-from typing import List
 import http
+from typing import List
 
-from fastapi import status
 import fastapi
-import sqlmodel
+import pydantic
+from fastapi import status
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.api import dependencies
 from app.crud import anime as anime_crud
@@ -27,15 +28,17 @@ router = fastapi.APIRouter()
                      "model": response.Response
                  }
              })
-def create_anime(
+async def create_anime(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     anime_in: anime_model.AnimeCreate,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> anime_model.Anime:
     """Creates a new anime."""
-    anime_db = anime_crud.AnimeCRUD.get_by_title(session, anime_in.title_en)
+    anime_db = await anime_crud.AnimeCRUD.get_by_title(session,
+                                                       anime_in.title_en)
 
     if anime_db:
         raise fastapi.HTTPException(
@@ -47,7 +50,7 @@ def create_anime(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    anime = anime_crud.AnimeCRUD.create(session, model_in=anime_in)
+    anime = await anime_crud.AnimeCRUD.create(session, model_in=anime_in)
 
     return anime
 
@@ -62,15 +65,16 @@ def create_anime(
                     "model": response.Response
                 }
             })
-def read_anime(
+async def read_anime(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    anime_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    anime_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
 ) -> anime_model.Anime:
     """Returns an anime given the id."""
-    anime = anime_crud.AnimeCRUD.read(session, anime_id)
+    anime = await anime_crud.AnimeCRUD.read(session, anime_id)
 
     if not anime:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -84,15 +88,18 @@ def read_anime(
             responses={401: {
                 "model": response.Response
             }})
-def read_anime_list(
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+async def read_anime_list(
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
     offset: int = 0,
     limit: int = fastapi.Query(default=100, le=100),
 ) -> List[anime_model.Anime]:
     """Returns a list of anime."""
-    return anime_crud.AnimeCRUD.read_multi(session, offset=offset, limit=limit)
+    return await anime_crud.AnimeCRUD.read_multi(session,
+                                                 offset=offset,
+                                                 limit=limit)
 
 
 @router.put("/",
@@ -105,16 +112,17 @@ def read_anime_list(
                     "model": response.Response
                 }
             })
-def update_anime(
+async def update_anime(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_patron),
-    anime_id: int,
+    anime_id: pydantic.UUID4,
     anime_in: anime_model.AnimeUpdate,
 ) -> anime_model.Anime:
     """Updates an anime."""
-    anime_db = anime_crud.AnimeCRUD.read(session, anime_id)
+    anime_db = await anime_crud.AnimeCRUD.read(session, anime_id)
 
     if not anime_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -124,9 +132,9 @@ def update_anime(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="https://www.youtube.com/watch?v=Z4oDZCJMDeY")
 
-    anime_db = anime_crud.AnimeCRUD.update(session,
-                                           model_db=anime_db,
-                                           model_in=anime_in)
+    anime_db = await anime_crud.AnimeCRUD.update(session,
+                                                 model_db=anime_db,
+                                                 model_in=anime_in)
 
     return anime_db
 
@@ -141,20 +149,21 @@ def update_anime(
                        "model": response.Response
                    }
                })
-def delete_anime(
+async def delete_anime(
     *,
-    session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
-    anime_id: int,
+    session: aio_session.AsyncSession = fastapi.Depends(
+        dependencies.get_session),
+    anime_id: pydantic.UUID4,
     current_patron: patron_model.Patron = fastapi.Depends(  # pylint: disable=unused-argument
         dependencies.get_current_active_superuser),
 ):
     """Deletes an anime."""
-    anime_db = anime_crud.AnimeCRUD.read(session, anime_id)
+    anime_db = await anime_crud.AnimeCRUD.read(session, anime_id)
 
     if not anime_db:
         raise fastapi.HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                     detail="Anime not found.")
 
-    anime_crud.AnimeCRUD.delete(session, anime_id)
+    await anime_crud.AnimeCRUD.delete(session, anime_id)
 
     return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT.value)

@@ -2,10 +2,10 @@
 
 import datetime
 
+import fastapi
 from fastapi import security
 from fastapi import status
-import fastapi
-import sqlmodel
+from sqlmodel.ext.asyncio import session as aio_session
 
 from app.api import dependencies
 from app.core import config
@@ -18,7 +18,8 @@ router = fastapi.APIRouter()
 
 @router.post("/token", response_model=token.Token)
 async def login_for_access_token(
-        session: sqlmodel.Session = fastapi.Depends(dependencies.get_session),
+        session: aio_session.AsyncSession = fastapi.Depends(
+            dependencies.get_session),
         form_data: security.OAuth2PasswordRequestForm = fastapi.Depends()):
     """Returns the OAuth2 access token for the given login.
 
@@ -26,9 +27,8 @@ async def login_for_access_token(
         session: The database session.
         form_data: The OAuth2 form data.
     """
-    user = patron_crud.PatronCRUD.authenticate(session,
-                                               username=form_data.username,
-                                               password=form_data.password)
+    user = await patron_crud.PatronCRUD.authenticate(
+        session, username=form_data.username, password=form_data.password)
 
     if not user:
         raise fastapi.HTTPException(

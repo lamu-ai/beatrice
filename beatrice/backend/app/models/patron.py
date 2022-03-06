@@ -7,23 +7,13 @@ import pydantic
 import sqlmodel
 
 from app.models import mixins
+from app.models import validators
 
 if typing.TYPE_CHECKING:
     from app.models.anime import Anime, AnimeRead
     from app.models.manga import Manga, MangaRead
     from app.models.movie import Movie, MovieRead
     from app.models.book import Book, BookRead
-
-
-def capitalize_name(name: str):
-    """Capitalizes every word of the input.
-
-    Params:
-        name: The name.
-    Returns:
-        The stripped and capitalized name.
-    """
-    return name.strip().title()
 
 
 class PatronBase(sqlmodel.SQLModel):
@@ -34,8 +24,8 @@ class PatronBase(sqlmodel.SQLModel):
     email: pydantic.EmailStr
     name: str
 
-    _capitalize_name = pydantic.validator("name", pre=True,
-                                          allow_reuse=True)(capitalize_name)
+    _normalize_name = pydantic.validator("name", allow_reuse=True)(
+        validators.normalize_name)
 
 
 class Patron(PatronBase, mixins.TimestampsMixin, mixins.BaseMixin, table=True):
@@ -44,10 +34,14 @@ class Patron(PatronBase, mixins.TimestampsMixin, mixins.BaseMixin, table=True):
     is_active: bool = True
     is_superuser: bool = False
 
-    anime: List["Anime"] = sqlmodel.Relationship(back_populates="patron")
-    manga: List["Manga"] = sqlmodel.Relationship(back_populates="patron")
-    movies: List["Movie"] = sqlmodel.Relationship(back_populates="patron")
-    books: List["Book"] = sqlmodel.Relationship(back_populates="patron")
+    anime: List["Anime"] = sqlmodel.Relationship(
+        back_populates="patron", sa_relationship_kwargs={"lazy": "selectin"})
+    manga: List["Manga"] = sqlmodel.Relationship(
+        back_populates="patron", sa_relationship_kwargs={"lazy": "selectin"})
+    movies: List["Movie"] = sqlmodel.Relationship(
+        back_populates="patron", sa_relationship_kwargs={"lazy": "selectin"})
+    books: List["Book"] = sqlmodel.Relationship(
+        back_populates="patron", sa_relationship_kwargs={"lazy": "selectin"})
 
 
 class PatronCreate(PatronBase):
@@ -74,12 +68,14 @@ class PatronUpdate(sqlmodel.SQLModel):
     """Patron update model."""
     username: pydantic.constr(strip_whitespace=True,
                               regex=r"^[a-z][_a-z0-9]*$") | None = None
-    email: str | None = None
+    email: pydantic.EmailStr | None = None
     password: str | None = None
-    name: str | None = None
+    # TODO: Set default to None when
+    # https://github.com/tiangolo/sqlmodel/issues/230 is resolved.
+    name: str | None = ""
 
-    _capitalize_name = pydantic.validator("name", pre=True,
-                                          allow_reuse=True)(capitalize_name)
+    _normalize_name = pydantic.validator("name", allow_reuse=True)(
+        validators.normalize_name)
 
 
 class PatronUpdateAsSuperuser(PatronUpdate):
