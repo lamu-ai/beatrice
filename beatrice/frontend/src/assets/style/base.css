@@ -1,0 +1,145 @@
+/* Modular scale */
+:root {
+  --ratio: 1.5;
+  --s-5: calc(var(--s-4) / var(--ratio));
+  --s-4: calc(var(--s-3) / var(--ratio));
+  --s-3: calc(var(--s-2) / var(--ratio));
+  --s-2: calc(var(--s-1) / var(--ratio));
+  --s-1: calc(var(--s0) / var(--ratio));
+  --s0: 1rem;
+  --s1: calc(var(--s0) * var(--ratio));
+  --s2: calc(var(--s1) * var(--ratio));
+  --s3: calc(var(--s2) * var(--ratio));
+  --s4: calc(var(--s3) * var(--ratio));
+  --s5: calc(var(--s4) * var(--ratio));
+}
+
+/* Color palette */
+:root {
+  --dark-sienna: #391521;
+  --fandango-pink: #e15183;
+  --nadeshigo-pink: #efa6bf;
+  --candy-pink: #d77a84;
+  --papaya-whip: #feedd2;
+  --floral-white: #fdf8f1;
+}
+
+/* Semantic color variables */
+:root {
+  --color-background-dark: var(--papaya-whip);
+  --color-background: var(--floral-white);
+  --color-accent: var(--fandango-pink);
+  --color-text: var(--dark-sienna);
+}
+
+
+/* Color palette from <https://github.com/vuejs/theme> */
+/*
+:root {
+  --vt-c-white: #ffffff;
+  --vt-c-white-soft: #f8f8f8;
+  --vt-c-white-mute: #f2f2f2;
+
+  --vt-c-black: #181818;
+  --vt-c-black-soft: #222222;
+  --vt-c-black-mute: #282828;
+
+  --vt-c-indigo: #2c3e50;
+
+  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
+  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+
+  --vt-c-text-light-1: var(--vt-c-indigo);
+  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+  --vt-c-text-dark-1: var(--vt-c-white);
+  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+}
+*/
+
+/* Semantic color variables for this project */
+/*
+:root {
+  --color-background-dark var(--vt-c-white);
+  --color-background: var(--vt-c-white-soft);
+  --color-background-mute: var(--vt-c-white-mute);
+
+  --color-border: var(--vt-c-divider-light-2);
+  --color-border-hover: var(--vt-c-divider-light-1);
+
+  --color-heading: var(--vt-c-text-light-1);
+  --color-text: var(--vt-c-text-light-1);
+
+  --section-gap: 160px;
+}
+*/
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-dark: var(--vt-c-black);
+    --color-background: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+
+    --color-border: var(--vt-c-divider-dark-2);
+    --color-border-hover: var(--vt-c-divider-dark-1);
+
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--vt-c-text-dark-2);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  position: relative;
+  font-weight: normal;
+}
+
+/* source-sans-pro-regular - latin */
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/source-sans-pro-v19-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local(''),
+       url('../fonts/source-sans-pro-v19-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('../fonts/source-sans-pro-v19-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('../fonts/source-sans-pro-v19-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('../fonts/source-sans-pro-v19-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('../fonts/source-sans-pro-v19-latin-regular.svg#SourceSansPro') format('svg'); /* Legacy iOS */
+}
+/* source-sans-pro-700 - latin */
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 700;
+  src: url('../fonts/source-sans-pro-v19-latin-700.eot'); /* IE9 Compat Modes */
+  src: local(''),
+       url('../fonts/source-sans-pro-v19-latin-700.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('../fonts/source-sans-pro-v19-latin-700.woff2') format('woff2'), /* Super Modern Browsers */
+       url('../fonts/source-sans-pro-v19-latin-700.woff') format('woff'), /* Modern Browsers */
+       url('../fonts/source-sans-pro-v19-latin-700.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('../fonts/source-sans-pro-v19-latin-700.svg#SourceSansPro') format('svg'); /* Legacy iOS */
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition: color 0.5s, background-color 0.5s;
+  line-height: 1.5;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 1em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override agent stylesheets */
+a {
+  color: var(--color-text);
+  text-decoration: none;
+}

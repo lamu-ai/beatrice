@@ -1,7 +1,16 @@
 services:
-  backend_dev:
-    container_name: beatrice_backend_dev
-    image: beatrice_backend_dev
+  db:
+    container_name: beatrice_db
+    image: postgres:14.2-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./beatrice/backend/.env
+    ports:
+      - 5432:5432
+  backend:
+    container_name: beatrice_backend
+    image: beatrice_backend
     build:
       context: ./beatrice/backend
       dockerfile: Dockerfile
@@ -15,15 +24,22 @@ services:
       - ./beatrice/backend/.env
     ports:
       - 8000:8000
-  db:
-    container_name: beatrice_db
-    image: postgres:14.2-alpine
+  frontend:
+    container_name: beatrice_frontend
+    image: beatrice_frontend
+    build:
+      context: ./beatrice/frontend
+      dockerfile: Dockerfile
+      target: development
+    depends_on:
+      - backend
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - ./beatrice/frontend/:/frontend
     env_file:
-      - ./beatrice/backend/.env
+      - ./beatrice/frontend/.env
     ports:
-      - 5432:5432
+      - 80:80
+      - 3000:3000
 
 volumes:
   postgres_data:

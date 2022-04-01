@@ -12,9 +12,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     VENV_PATH="/opt/pysetup/.venv"
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
-FROM base as builder
+FROM base as build
 RUN apk add --no-cache build-base curl gcc g++ libffi-dev musl-dev postgresql 
-
 RUN curl -sSL https://install.python-poetry.org | python3 -
 WORKDIR $PYSETUP_PATH
 COPY ./pyproject.toml ./poetry.lock ./
@@ -24,11 +23,11 @@ COPY . .
 
 FROM base as development
 WORKDIR $PYSETUP_PATH
-COPY --from=builder $POETRY_HOME $POETRY_HOME
-COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
+COPY --from=build $POETRY_HOME $POETRY_HOME
+COPY --from=build $PYSETUP_PATH $PYSETUP_PATH
 RUN poetry install
 WORKDIR /backend
 
 FROM base as production
-COPY --from=builder $PYSETUP_PATH $PYSETUP_PATH
+COPY --from=build $PYSETUP_PATH $PYSETUP_PATH
 WORKDIR /backend
